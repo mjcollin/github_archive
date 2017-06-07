@@ -3,34 +3,48 @@ import sys
 import json
 import gzip
 import glob
+#import gevent
+#from gevent.pool import Pool
+
+#from gevent import monkey
+#monkey.patch_socket()
+
+from multiprocessing import Pool
 
 data_dir = "data"
 
-def yield_email(d):
+def yield_people(d):
     """yeild email and maybe names from a nested dictionary"""
     for k, v in d.items():
-        #print(k, v)
-        email = False
-        if k is "email":
-            email = v
-        elif isinstance(v, dict) and v.get("email", False):
-            email = v["email"]
+        person = {}
 
-        if email:
-            yield email
+        if k is "email":
+            person["email"] = v
+        elif isinstance(v, dict) and v.get("email", False):
+            person["email"] = v["email"]
+            if v.get("name", False):
+                person["name"] = v["name"]
+            elif v.get("login", False):
+                person["name"] = v["login"]
+
+        if person:
+            yield person
 
         if isinstance(v, dict):
-            yield from yield_email(v)
+            yield from yield_people(v)
         if isinstance(v, list):
             for i in v:
-                yield from yield_email(i)
+                yield from yield_people(i)
 
-
-for fn in glob.glob(os.path.join(data_dir, "*.json.gz")):
+def get_emails(fn):
     with gzip.open(fn, "rb") as gz:
         for line in gz:
             rec = json.loads(line.decode("utf8"))
             #print(rec)
-            for e in yield_email(rec):
-                print(e)
+            for p in yield_people(rec):
+                print("{0},{1}".format(p["email"], p.get("name", "Unknown")))
             #sys.exit()
+
+pool = Pool(processes=16)
+pool.map(get_emails, glob.glob(os.path.join(data_dir, "*.json.gz")))
+
