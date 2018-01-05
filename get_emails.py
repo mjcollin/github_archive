@@ -37,14 +37,17 @@ def yield_people(d):
                 yield from yield_people(i)
 
 def get_emails(fn):
-    with gzip.open(fn, "rb") as gz:
-        for line in gz:
-            rec = json.loads(line.decode("utf8"))
-            #print(rec)
-            for p in yield_people(rec):
-                print("{0},{1}".format(p["email"], p.get("name", "Unknown")))
-            #sys.exit()
+    try:
+        with gzip.open(fn, "rb") as gz:
+            for line in gz:
+                rec = json.loads(line.decode("utf8"))
+                #print(rec)
+                for p in yield_people(rec):
+                    print("{0},{1}".format(p["email"], p.get("name", "Unknown")))
+                #sys.exit()
+    except:
+        print("Error in file {0}".format(fn))
 
-pool = Pool(processes=16)
+pool = Pool(processes=128)
 pool.map(get_emails, glob.glob(os.path.join(data_dir, "*.json.gz")))
 
