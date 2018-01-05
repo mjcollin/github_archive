@@ -48,6 +48,6 @@ def get_emails(fn):
     except:
         print("Error in file {0}".format(fn))
 
-pool = Pool(processes=128)
+pool = Pool(processes=16)
 pool.map(get_emails, glob.glob(os.path.join(data_dir, "*.json.gz")))
 
